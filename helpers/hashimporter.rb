@@ -23,6 +23,9 @@
 #end
 
 def addHash(hash, hashtype)
+if ENV['RACK_ENV'] == 'test'
+  @nb_hashes.insert(:hash=> hash, :hashtype=>hashtype, :cracked=>false)
+else
   entry = Hashes.new
   entry.originalhash = hash
   entry.hashtype = hashtype
@@ -30,12 +33,19 @@ def addHash(hash, hashtype)
   entry.save
 end
 
+end
+
 def updateHashfileHashes(hash_id, username, hashfile_id)
+if ENV['RACK_ENV'] == 'test'
+  @nb_hashfilehashes.insert(:hash_id=>hash_id, :username=>username, :hashfile_id=>hashfile_id)
+else
   entry = Hashfilehashes.new
   entry.hash_id = hash_id
   entry.username = username
   entry.hashfile_id = hashfile_id
   entry.save
+end
+
 end
 
 def importPwdump(hash, hashfile_id, type)
@@ -151,7 +161,7 @@ def importNetNTLMv1(hash, hashfile_id, type)
 end
 
 def importNetNTLMv2(hash, hashfile_id, type)
-  data = hash.split(':')
+c  data = hash.split(':')
 
   @hash_id = Hashes.first(fields: [:id], originalhash: hash, hashtype: type)
   if @hash_id.nil?
@@ -212,13 +222,26 @@ def importHashOnly(hash, hashfile_id, type)
     updateHashfileHashes(@hash_id.id.to_i, fields[0], hashfile_id)
 
   else
-    @hash_id = Hashes.first(fields: [:id], originalhash: hash, hashtype: type)
-    if @hash_id.nil?
-      addHash(hash, type)
+    if ENV['RACK_ENV'] == 'test'
+    @hash_id = @nb_hashes.where(:originalhash => hash, :hashtype=>type).limit(1)
+    else
       @hash_id = Hashes.first(fields: [:id], originalhash: hash, hashtype: type)
     end
+    if @hash_id.nil?
+      addHash(hash, type)
+    
+      if ENV['RACK_ENV'] == 'test'
+      @hash_id = @nb_hashes.where(:originalhash => hash, :hashtype=>type).limit(1)
+      else
+        @hash_id = Hashes.first(fields: [:id], originalhash: hash, hashtype: type)
+      end
+    end
 
+  if ENV['RACK_ENV'] == 'test'
+    updateHashfileHashes(@hash_id[:id].to_i, 'NULL', hashfile_id)
+  else
     updateHashfileHashes(@hash_id.id.to_i, 'NULL', hashfile_id)
+  end
 
   end
 end
@@ -437,6 +460,9 @@ def friendlyToMode(friendly)
 end
 
 def importHash(hash_file, hashfile_id, file_type, hashtype)
+  @nb_hashes = NBDB[:hashes]
+  @nb_hashfilehashes = NBDB[:hashfilehashes]
+
   hash_file.each do |entry|
     entry = entry.gsub(/\s+/, '') # remove all spaces
     if file_type == 'pwdump' or file_type == 'smart hashdump' 

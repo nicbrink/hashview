@@ -1,6 +1,7 @@
 require 'rubygems'
 require 'data_mapper'
 require 'bcrypt'
+require 'sequel'
 
 # read config
 options = YAML.load_file('config/database.yml')
@@ -9,6 +10,7 @@ options = YAML.load_file('config/database.yml')
 if ENV['RACK_ENV'] == 'test'
   DataMapper::Logger.new($stdout, :debug)
   DataMapper.setup(:default, options['test'])
+  NBDB = Sequel.mysql(options['test'])
 elsif ENV['RACK_ENV'] == 'development'
   DataMapper::Logger.new($stdout, :debug)
   DataMapper.setup(:default, options['development'])
