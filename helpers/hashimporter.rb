@@ -460,8 +460,10 @@ def friendlyToMode(friendly)
 end
 
 def importHash(hash_file, hashfile_id, file_type, hashtype)
-  @nb_hashes = NBDB[:hashes]
-  @nb_hashfilehashes = NBDB[:hashfilehashes]
+  if ENV['RACK_ENV'] == 'test'
+    @nb_hashes = NBDB[:hashes]
+    @nb_hashfilehashes = NBDB[:hashfilehashes]
+  end
 
   hash_file.each do |entry|
     entry = entry.gsub(/\s+/, '') # remove all spaces
