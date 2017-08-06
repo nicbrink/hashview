@@ -23,29 +23,14 @@
 #end
 
 def addHash(hash, hashtype)
-if ENV['RACK_ENV'] == 'test'
-  @nb_hashes.insert(:originalhash=> hash, :hashtype=>hashtype, :cracked=>false)
-else
-  entry = Hashes.new
-  entry.originalhash = hash
-  entry.hashtype = hashtype
-  entry.cracked = false
-  entry.save
-end
+
+  @hashes.insert(:originalhash=> hash, :hashtype=>hashtype, :cracked=>false)
 
 end
 
 def updateHashfileHashes(hash_id, username, hashfile_id)
-if ENV['RACK_ENV'] == 'test'
-  #puts "DATA:#{hash_id} #{username} #{hashfile_id}"
-  @nb_hashfilehashes.insert(:hash_id=>hash_id, :username=>username, :hashfile_id=>hashfile_id)
-else
-  entry = Hashfilehashes.new
-  entry.hash_id = hash_id
-  entry.username = username
-  entry.hashfile_id = hashfile_id
-  entry.save
-end
+
+  @hashfilehashes.insert(:hash_id=>hash_id, :username=>username, :hashfile_id=>hashfile_id)
 
 end
 
@@ -62,18 +47,18 @@ def importPwdump(hash, hashfile_id, type)
     lm_hash_0 = lm_hashes[0].downcase
     lm_hash_1 = lm_hashes[1].downcase
  
-    @hash_id = Hashes.first(fields: [:id], originalhash: lm_hash_0, hashtype: type)
+    @hash_id = @hashes.where(:originalhash => lm_hash_0, :hashtype=>type).first[:id]
     if @hash_id.nil?
       addHash(lm_hash_0, type)
-      @hash_id = Hashes.first(fields: [:id], originalhash: lm_hash_0, hashtype: type)
+    @hash_id = @hashes.where(:originalhash => lm_hash_0, :hashtype=>type).first[:id]
     end
 
     updateHashfileHashes(@hash_id.id.to_i, data[0], hashfile_id)
 
-    @hash_id = Hashes.first(fields: [:id], originalhash: lm_hash_1, hashtype: type)
+    @hash_id = @hashes.where(:originalhash => lm_hash_1, :hashtype=>type).first[:id]
     if @hash_id.nil?
       addHash(lm_hash_1, type)
-      @hash_id = Hashes.first(fields: [:id], originalhash: lm_hash_1, hashtype: type)
+    @hash_id = @hashes.where(:originalhash => lm_hash_1, :hashtype=>type).first[:id]
     end
 
     updateHashfileHashes(@hash_id.id.to_i, data[0], hashfile_id)
@@ -81,10 +66,10 @@ def importPwdump(hash, hashfile_id, type)
 
   # if hashtype is ntlm
   if type == '1000'
-    @hash_id = Hashes.first(fields: [:id], originalhash: data[3], hashtype: type)
+    @hash_id = @hashes.where(:originalhash => data[3], :hashtype=>type).first[:id]
     if @hash_id.nil?
       addHash(data[3], type)
-      @hash_id = Hashes.first(fields: [:id], originalhash: data[3], hashtype: type)
+    @hash_id = @hashes.where(:originalhash => data[3], :hashtype=>type).first[:id]
     end
 
     updateHashfileHashes(@hash_id.id.to_i, data[0], hashfile_id)
@@ -102,10 +87,10 @@ end
 def importShadow(hash, hashfile_id, type)
   # This parser needs some work
   data = hash.split(':')
-  @hash_id = Hashes.first(fields: [:id], originalhash: data[1], hashtype: type)
+  @hash_id = @hashes.where(:originalhash => data[1], :hashtype=>type).first[:id]
   if @hash_id.nil?
     addHash(data[1], type)
-    @hash_id = Hashes.first(fields: [:id], originalhash: data[1], hashtype: type)
+    @hash_id = @hashes.where(:originalhash => data[1], :hashtype=>type).first[:id]
   end
 
   updateHashfileHashes(@hash_id.id.to_i, data[0], hashfile_id)
@@ -118,10 +103,10 @@ def importDsusers(hash, hashfile_id, type)
     type = '3000'
   end
 
-  @hash_id = Hashes.first(fields: [:id], originalhash: data[1], hashtype: type)
+  @hash_id = @hashes.where(:originalhash => data[1], :hashtype=>type).first[:id]
   if @hash_id.nil?
     addHash(data[1], type)
-    @hash_id = Hashes.first(fields: [:id], originalhash: data[1], hashtype: type)
+    @hash_id = @hashes.where(:originalhash => data[1], :hashtype=>type).first[:id]
   end
 
   updateHashfileHashes(@hash_id.id.to_i, data[0], hashfile_id)
@@ -129,20 +114,20 @@ end
 
 def importUserHash(hash, hashfile_id, type)
   data = hash.split(':')
-  @hash_id = Hashes.first(fields: [:id], originalhash: data[1], hashtype: type)
+  @hash_id = @hashes.where(:originalhash => data[1], :hashtype=>type).first[:id]
   if @hash_id.nil?
     addHash(data[1], type)
-    @hash_id = Hashes.first(fields: [:id], originalhash: data[1], hashtype: type)
+    @hash_id = @hashes.where(:originalhash => data[1], :hashtype=>type).first[:id]
   end
 
   updateHashfileHashes(@hash_id.id.to_i, data[0], hashfile_id)
 end
 
 def importHashSalt(hash, hashfile_id, type)
-  @hash_id = Hashes.first(fields: [:id], originalhash: hash, hashtype: type)
+  @hash_id = @hashes.where(:originalhash => hash, :hashtype=>type).first[:id]
   if @hash_id.nil?
     addHash(hash, type)
-    @hash_id = Hashes.first(fields: [:id], originalhash: hash, hashtype: type)
+    @hash_id = @hashes.where(:originalhash => hash, :hashtype=>type).first[:id]
   end
 
   updateHashfileHashes(@hash_id.id.to_i, 'null', hashfile_id)
@@ -152,10 +137,10 @@ def importNetNTLMv1(hash, hashfile_id, type)
   data = hash.split(':')
   originalhash = data[3].to_s.downcase + ':' + data[4].to_s.downcase + ':' + data[5].to_s.downcase
 
-  @hash_id = Hashes.first(fields: [:id], originalhash: originalhash, hashtype: type)
+  @hash_id = @hashes.where(:originalhash => originalhash, :hashtype=>type).first[:id]
   if @hash_id.nil?
     addHash(originalhash, type)
-    @hash_id = Hashes.first(fields: [:id], originalhash: originalhash, hashtype: type)
+    @hash_id = @hashes.where(:originalhash => originalhash, :hashtype=>type).first[:id]
   end
 
   updateHashfileHashes(@hash_id.id.to_i, data[0], hashfile_id)
@@ -164,10 +149,10 @@ end
 def importNetNTLMv2(hash, hashfile_id, type)
 c  data = hash.split(':')
 
-  @hash_id = Hashes.first(fields: [:id], originalhash: hash, hashtype: type)
+  @hash_id = @hashes.where(:originalhash => hash, :hashtype=>type).first[:id]
   if @hash_id.nil?
     addHash(hash, type)
-    @hash_id = Hashes.first(fields: [:id], originalhash: hash, hashtype: type)
+    @hash_id = @hashes.where(:originalhash => hash, :hashtype=>type).first[:id]
   end
 
   updateHashfileHashes(@hash_id.id.to_i, data[0], hashfile_id)
@@ -180,18 +165,18 @@ def importHashOnly(hash, hashfile_id, type)
     lm_hash_0 = lm_hashes[0].downcase
     lm_hash_1 = lm_hashes[1].downcase
 
-    @hash_id = Hashes.first(fields: [:id], originalhash: lm_hash_0, hashtype: type)
+    @hash_id = @hashes.where(:originalhash => lm_hash_0, :hashtype=>type).first[:id]
     if @hash_id.nil?
       addHash(lm_hash_0, type)
-      @hash_id = Hashes.first(fields: [:id], originalhash: lm_hash_0, hashtype: type)
+      @hash_id = @hashes.where(:originalhash => lm_hash_0, :hashtype=>type).first[:id]
     end
 
     updateHashfileHashes(@hash_id.id.to_i, 'NULL', hashfile_id)
 
-    @hash_id = Hashes.first(fields: [:id], originalhash: lm_hash_1, hashtype: type)
+    @hash_id = @hashes.where(:originalhash => lm_hash_1, :hashtype=>type).first[:id]
     if @hash_id.nil?
       addHash(lm_hash_1, type)
-      @hash_id = Hashes.first(fields: [:id], originalhash: lm_hash_1, hashtype: '3000')
+      @hash_id = @hashes.where(:originalhash => lm_hash_1, :hashtype=>'3000').first[:id]
     end
 
     updateHashfileHashes(@hash_id.id.to_i, 'NULL', hashfile_id)
@@ -201,10 +186,10 @@ def importHashOnly(hash, hashfile_id, type)
     fields = hash.split(':')
     originalhash = fields[3].to_s.downcase + ':' + fields[4].to_s.downcase + ':' + fields[5].to_s.downcase
 
-    @hash_id = Hashes.first(fields: [:id], originalhash: originalhash, hashtype: type)
+    @hash_id = @hashes.where(:originalhash => originalhash, :hashtype=>type).first[:id]
     if @hash_id.nil?
       addHash(originalhash, type)
-      @hash_id = Hashes.first(fields: [:id], originalhash: originalhash, hashtype: type)
+      @hash_id = @hashes.where(:originalhash => originalhash, :hashtype=>type).first[:id]
     end
 
     updateHashfileHashes(@hash_id.id.to_i, fields[0], hashfile_id)
@@ -214,30 +199,23 @@ def importHashOnly(hash, hashfile_id, type)
     # import NetNTLMv2
     fields = hash.split(':')
 
-    @hash_id = Hashes.first(fields: [:id], originalhash: hash, hashtype: type)
+    @hash_id = @hashes.where(:originalhash => hash, :hashtype=>type).first[:id]
     if @hash_id.nil?
       addHash(hash, type)
-      @hash_id = Hashes.first(fields: [:id], originalhash: hash, hashtype: type)
+      @hash_id = @hashes.where(:originalhash => hash, :hashtype=>type).first[:id]
     end
 
     updateHashfileHashes(@hash_id.id.to_i, fields[0], hashfile_id)
 
   else
-    if ENV['RACK_ENV'] == 'test'
-      @hash_id = @nb_hashes.where(:originalhash => hash, :hashtype=>type).first[:id]
-      if @hash_id.nil?
-        addHash(hash, type)
-        @hash_id = @nb_hashes.where(:originalhash => hash, :hashtype=>type).first[:id]
-      end
-      updateHashfileHashes(@hash_id.to_i, 'NULL', hashfile_id)
-    else
-      @hash_id = Hashes.first(fields: [:id], originalhash: hash, hashtype: type)
-      if @hash_id.nil?
-        addHash(hash, type)
-        @hash_id = Hashes.first(fields: [:id], originalhash: hash, hashtype: type)
-      end
-      updateHashfileHashes(@hash_id.id.to_i, 'NULL', hashfile_id)
+    
+    @hash_id = @hashes.where(:originalhash => hash, :hashtype=>type).first[:id]
+    if @hash_id.nil?
+      addHash(hash, type)
+      @hash_id = @hashes.where(:originalhash => hash, :hashtype=>type).first[:id]
     end
+    updateHashfileHashes(@hash_id.to_i, 'NULL', hashfile_id)
+    
   end
 end
 
@@ -455,10 +433,9 @@ def friendlyToMode(friendly)
 end
 
 def importHash(hash_file, hashfile_id, file_type, hashtype)
-  if ENV['RACK_ENV'] == 'test'
-    @nb_hashes = NBDB[:hashes]
-    @nb_hashfilehashes = NBDB[:hashfilehashes]
-  end
+
+  @hashes = NBDB[:hashes]
+  @hashfilehashes = NBDB[:hashfilehashes]
 
   hash_file.each do |entry|
     entry = entry.gsub(/\s+/, '') # remove all spaces
