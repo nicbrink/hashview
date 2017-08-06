@@ -24,7 +24,7 @@
 
 def addHash(hash, hashtype)
 if ENV['RACK_ENV'] == 'test'
-  @nb_hashes.insert(:hash=> hash, :hashtype=>hashtype, :cracked=>false)
+  @nb_hashes.insert(:originalhash=> hash, :hashtype=>hashtype, :cracked=>false)
 else
   entry = Hashes.new
   entry.originalhash = hash
@@ -37,6 +37,7 @@ end
 
 def updateHashfileHashes(hash_id, username, hashfile_id)
 if ENV['RACK_ENV'] == 'test'
+  #puts "DATA:#{hash_id} #{username} #{hashfile_id}"
   @nb_hashfilehashes.insert(:hash_id=>hash_id, :username=>username, :hashfile_id=>hashfile_id)
 else
   entry = Hashfilehashes.new
@@ -223,26 +224,20 @@ def importHashOnly(hash, hashfile_id, type)
 
   else
     if ENV['RACK_ENV'] == 'test'
-    @hash_id = @nb_hashes.where(:originalhash => hash, :hashtype=>type).limit(1)
+      @hash_id = @nb_hashes.where(:originalhash => hash, :hashtype=>type).first[:id]
+      if @hash_id.nil?
+        addHash(hash, type)
+        @hash_id = @nb_hashes.where(:originalhash => hash, :hashtype=>type).first[:id]
+      end
+      updateHashfileHashes(@hash_id.to_i, 'NULL', hashfile_id)
     else
       @hash_id = Hashes.first(fields: [:id], originalhash: hash, hashtype: type)
-    end
-    if @hash_id.nil?
-      addHash(hash, type)
-    
-      if ENV['RACK_ENV'] == 'test'
-      @hash_id = @nb_hashes.where(:originalhash => hash, :hashtype=>type).limit(1)
-      else
+      if @hash_id.nil?
+        addHash(hash, type)
         @hash_id = Hashes.first(fields: [:id], originalhash: hash, hashtype: type)
       end
+      updateHashfileHashes(@hash_id.id.to_i, 'NULL', hashfile_id)
     end
-
-  if ENV['RACK_ENV'] == 'test'
-    updateHashfileHashes(@hash_id[:id].to_i, 'NULL', hashfile_id)
-  else
-    updateHashfileHashes(@hash_id.id.to_i, 'NULL', hashfile_id)
-  end
-
   end
 end
 
