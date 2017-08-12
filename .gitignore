@@ -24,3 +24,5 @@ control/tmp/*
 *.restore
 *.idea
 dump.rdb
+Gemfile.lock
+
