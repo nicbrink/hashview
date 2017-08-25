@@ -43,6 +43,10 @@ namespace :db do
   task :upgrade
   desc 'Drop from all tables except users and task'
   task :reset
+  desc 'AnP Backup database and drop all except hashes, config, users'
+  task :wipe => [:backup, :anpreset]
+  desc 'Backup'
+  task :backup
 
   # Are the below ever needed beyond our testing?
   #desc 'create and setup schema'
@@ -152,6 +156,50 @@ namespace :db do
         raise 'Something went wrong. double check your config/database.yml file and manually test access to mysql.'
       end
     end  
+  end
+
+  task :anpreset do
+    if ENV['RACK_ENV'].nil?
+      ENV['RACK_ENV'] = 'development'
+    end
+    puts "removing all data in the database for environment: #{ENV['RACK_ENV']}"
+    config = YAML.load_file('config/database.yml')
+    config = config[ENV['RACK_ENV']]
+    user, password, host = config['user'], config['password'], config['hostname']
+    database = config['database']
+        
+    #drop tables
+    tables = [ 'customers','hashfilehashes','hashfiles','jobs','jobtasks','taskqueues','wordlists' ]
+    tables.each do |table|
+      query = [
+        'mysql', "--user=#{user}", "--password='#{password}'", "--host=#{host}","--database=#{database} -e", "TRUNCATE TABLE #{table}".inspect
+      ]
+      begin
+        system(query.compact.join(' '))
+      rescue
+        raise 'Something went wrong. double check your config/database.yml file and manually test access to mysql.'
+      end
+    end
+  end
+
+  task :backup do
+    if ENV['RACK_ENV'].nil?
+      ENV['RACK_ENV'] = 'development'
+    end
+    puts "Backing up the database for environment: #{ENV['RACK_ENV']}"
+    config = YAML.load_file('config/database.yml')
+    config = config[ENV['RACK_ENV']]
+    user, password, host = config['user'], config['password'], config['hostname']
+    database = config['database']
+    backup = "/opt/hashview/backups/backup_#{Time.now.strftime('%Y-%m-%d_%H-%M-%S')}"
+    query = [
+      'mysqldump', "--user=#{user}", "--password='#{password}'", "--host=#{host}","--databases #{database} ", "> #{backup}"
+    ]
+    begin
+      system(query.compact.join(' '))
+    rescue
+      raise 'Something went wrong. double check your config/database.yml file and manually test access to mysql.'
+    end
   end
 
   task :provision_defaults do
