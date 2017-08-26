@@ -7,6 +7,7 @@ require './models/master.rb'
 require './helpers/email.rb'
 require './helpers/smartWordlist.rb'
 require './helpers/compute_task_keyspace.rb'
+require 'csv'
 
 require_relative 'jobs/init'
 #require_relative 'helpers/init'
@@ -770,3 +771,42 @@ def upgrade_to_v070(user, password, host, database)
   conn.query("UPDATE settings SET version = '0.7.0'")
   puts '[+] Upgrade to v0.7.0 complete.'
 end
+
+namespace :import do
+  desc 'Import a file of Masks straight into the database.'
+  task :mask, [:filename]  do |t, file|
+    if ENV['RACK_ENV'].nil?
+      ENV['RACK_ENV'] = 'development'
+    end
+
+    config = YAML.load_file('config/database.yml')
+    config = config[ENV['RACK_ENV']]
+    user, password, host = config['user'], config['password'], config['hostname']
+    database = config['database']
+    query = [
+      'mysql', "--user=#{user}", "--password='#{password}'", "--host=#{host}","--database=#{database} -e", 'CREATE UNIQUE INDEX ix_uq ON tasks (name, hc_mask);'
+      ]
+     
+     begin
+       system(query.compact.join(' '))
+     rescue
+       raise 'Something went wrong. double check your config/database.yml file and manually test access to mysql.'
+      end
+
+    puts "Inserting masks in the database for environment: #{ENV['RACK_ENV']}"
+    puts "#{file[:filename]}"
+    csv_text = File.read(file[:filename])
+    csv = CSV.parse(csv_text, :headers => true)
+    csv.each do |row|
+      query = [
+        'mysql', "--user=#{user}", "--password='#{password}'", "--host=#{host}","--database=#{database} -e", "\'  INSERT IGNORE INTO tasks (name, hc_attackmode, hc_mask, keyspace) VALUES (\"#{row['Name']}\",\"maskmode\",\"#{row['Mask']}\",\"#{row['Keyspace']}\");\'"
+        ]
+        begin
+          system(query.compact.join(' '))
+        rescue
+          raise 'Something went wrong. double check your config/database.yml file and manually test access to mysql.'
+      end
+    end
+
+  end
+end 

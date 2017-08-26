@@ -62,7 +62,7 @@ helpers do
     if attackmode == 'bruteforce'
       cmd = hc_binpath + ' -m ' + hashtype + ' --potfile-disable' + ' --status --status-timer=15' + ' --runtime=' + max_task_time + ' --outfile-format 5 ' + ' --outfile ' + crack_file + ' ' + ' -a 3 ' + target_file
     elsif attackmode == 'maskmode'
-      cmd = hc_binpath + ' -m ' + hashtype + ' --potfile-disable' + ' --status --status-timer=15' + ' --outfile-format 5 ' + ' --outfile ' + crack_file + ' ' + ' -a 3 ' + target_file + ' ' + mask
+      cmd = hc_binpath + ' -m ' + hashtype + ' --custom-charset1 ?l?d?u --custom-charset2 ?l?d --custom-charset3 ?l?d*!$@_  ' + ' --potfile-disable' + ' --status --status-timer=15' + ' --outfile-format 5 ' + ' --outfile ' + crack_file + ' ' + ' -a 3 ' + target_file + ' ' + mask
     elsif attackmode == 'dictionary'
       if @task.hc_rule.nil? || @task.hc_rule == 'none' 
         cmd = hc_binpath + ' -m ' + hashtype + ' --potfile-disable' + ' --status --status-timer=15' + ' --outfile-format 5 ' + ' --outfile ' + crack_file + ' ' + target_file + ' ' + wordlist.path
